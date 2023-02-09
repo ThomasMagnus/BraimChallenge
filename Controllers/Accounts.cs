@@ -4,6 +4,7 @@ using System.Text.Json;
 using BraimChallenge.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace BraimChallenge.Controllers
 {
@@ -15,54 +16,38 @@ namespace BraimChallenge.Controllers
         [HttpPost, Route("registration")]
         public IActionResult Registration(AccountBody value)
         {
-            if (!ValidateData(value))
-            {
-                return StatusCode((int)Status.error);
-            }
+            Helpers.Validator validator = new Helpers.Validator { value = value };
 
-            //if (String.IsNullOrWhiteSpace(value.firstName) || String.IsNullOrWhiteSpace(value.lastName) ||
-            //    String.IsNullOrWhiteSpace(value.password) || String.IsNullOrWhiteSpace(value.email))
-            //{
-            //    return StatusCode((int)Status.error);
-            //}
+            if (validator.DataValidator() != 200) return StatusCode(validator.DataValidator());
 
-            if (Account.accountList.Count != 0)
-            {
-                foreach(Account item in Account.accountList)
-                {
-                    if (item.email == value.email)
-                    {
-                        return StatusCode((int)Status.isEmail);
-                    }
-                }
-            }
+            using AccountContext accountContext = new();
+            List<Account>? accountResult = accountContext.account.ToList();
 
-            if (Account.authAccount is not null && Account.authAccount.firstName == value.firstName
-                && Account.authAccount.lastName == value.lastName && Account.authAccount.email == value.email)
+            if (accountResult.Any(x => x.firstName == value.firstName && x.lastName == value.lastName && x.email == value.email))
             {
-                Account.authAccount = new();
                 return StatusCode((int)Status.isAuth);
             }
 
             Account? account = new Account()
             {
-                id = id++,
                 firstName = value.firstName,
                 lastName = value.lastName,
                 email = value.email,
                 password = value.password
             };
 
-            Account.authAccount = account;
-
-            Account.accountList.Add(account);
+            accountContext.AddAsync(account);
+            accountContext.SaveChangesAsync();
 
             return Json(account);
         }
 
         [HttpGet, Route("accounts/{accountId?}")]
-        public IActionResult Information(int? accountId)
+        public IActionResult Information([FromHeader][Required] string Authorize, int? accountId)
         {
+
+            if (DetecUserAuth(Authorize) != 200) return StatusCode(DetecUserAuth(Authorize));
+
             try
             {
                 if (accountId <= 0 || accountId is null)
@@ -70,7 +55,10 @@ namespace BraimChallenge.Controllers
                     return StatusCode((int)Status.error);
                 }
 
-                Account? account = Account.accountList.FirstOrDefault(x => x.id == accountId);
+                using AccountContext accountContext = new();
+                List<Account> accountList = accountContext.account.ToList();
+
+                Account? account = accountList.FirstOrDefault(x => x.id == accountId);
 
                 if (account is null) return StatusCode((int)Status.isNotId);
 
@@ -84,8 +72,13 @@ namespace BraimChallenge.Controllers
         }
 
         [HttpGet, Route("accounts/search/{firstName?}/{lastName?}/{email?}/{from?}/{size?}")]
-        public IActionResult Search(string firstName, string lastName, string email, int? from = 0, int? size = 10)
+        public IActionResult Search([FromHeader][Required] string Authorize, string firstName, string lastName, string email, int? from = 0, int? size = 10)
         {
+
+            using AccountContext accountContext = new();
+            List<Account> accountList = accountContext.account.ToList();
+
+            if (DetecUserAuth(Authorize) != 200) return StatusCode(DetecUserAuth(Authorize));
 
             if (from is null || from < 0 
                 || size is null || size <= 0)
@@ -93,7 +86,7 @@ namespace BraimChallenge.Controllers
                 return StatusCode((int)Status.error);
             };
 
-            Account[]? account = Account.accountList.Where(x => x.firstName.ToLower().Contains(firstName.ToLower()) 
+            Account[]? account = accountList.Where(x => x.firstName.ToLower().Contains(firstName.ToLower()) 
                                                             && x.lastName.ToLower().Contains(lastName.ToLower()) 
                                                             && x.email.ToLower().Contains(email.ToLower())).Skip((int)from).Take((int)size).ToArray();
 
@@ -103,18 +96,20 @@ namespace BraimChallenge.Controllers
         }
 
         [HttpPut, Route("accounts/{accountId?}")]
-        public IActionResult UpdateAccount(int? accountId, AccountBody accountBody)
+        public IActionResult UpdateAccount([FromHeader][Required] string Authorize, int? accountId, AccountBody accountBody)
         {
 
-            if (accountId is null || accountId <= 0) return StatusCode((int)Status.error);
+            using AccountContext accountContext = new();
+            List<Account> accountList = accountContext.account.ToList();
 
-            if (!ValidateData(accountBody))
-            {
-                return StatusCode((int)Status.error);
-            }
+            Helpers.Validator validator = new Helpers.Validator { value = accountBody };
 
-            Account? account = Account.accountList.FirstOrDefault(x => x.id == accountId);
+            if (validator.DataValidator() != 200) return StatusCode(validator.DataValidator());
 
+            Account? account = accountList.FirstOrDefault(x => x.id == accountId);
+
+            if (account == null) { return StatusCode((int)Status.isAuth); }
+            
             account.firstName = accountBody.firstName;
             account.lastName = accountBody.lastName;
             account.email = accountBody.email;
@@ -124,16 +119,22 @@ namespace BraimChallenge.Controllers
         }
 
         [NonAction]
-        public bool ValidateData(AccountBody value)
+        private string[] HeaderData(string header) => header.Replace("Basic", "").Trim().Split(":");
+
+        [NonAction]
+        private int DetecUserAuth(string Authorize)
         {
-            if (String.IsNullOrWhiteSpace(value.firstName) || String.IsNullOrWhiteSpace(value.lastName) ||
-                String.IsNullOrWhiteSpace(value.password) || String.IsNullOrWhiteSpace(value.email))
-            {
-                return false;
-            } else
-            {
-                return true;
-            }
+            using AccountContext accountContext = new();
+            List<Account> accountList = accountContext.account.ToList();
+
+            string email = HeaderData(Authorize)[0];
+            string password = HeaderData(Authorize)[1];
+
+            bool userAuth = accountList.Any(x => x.email == email && x.password == password);
+
+            if (!userAuth) return (int)Status.notValData;
+
+            return (int)Status.success;
         }
     }
 }
