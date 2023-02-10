@@ -8,6 +8,8 @@ namespace BraimChallenge.Helpers
     public class Validator : IValidator
     {
         public AccountBody value { get; set; }
+
+        // Проверка на значения, которые вводит пользователь
         public bool ValidateData()
         {
             if (String.IsNullOrWhiteSpace(value.firstName) || String.IsNullOrWhiteSpace(value.lastName) ||
@@ -21,6 +23,7 @@ namespace BraimChallenge.Helpers
             }
         }
 
+        // Проверка, зарегестрирован ли пользователь с таким email
         public bool ValidateEmail()
         {
             using AccountContext accountContext = new();
@@ -37,6 +40,7 @@ namespace BraimChallenge.Helpers
             return true;
         }
 
+        // Объединение проверок
         public int DataValidator()
         {
             if (!ValidateData()) return (int)Status.error;
@@ -51,6 +55,5 @@ namespace BraimChallenge.Helpers
 
             return (int)Status.success;
         }
-
     }
 }

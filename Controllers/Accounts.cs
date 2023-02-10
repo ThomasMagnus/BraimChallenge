@@ -11,42 +11,53 @@ namespace BraimChallenge.Controllers
     [ApiController]
     public class Accounts : Controller
     {
-        private static int id { get; set; } = 1;
-
+        // Регистрация пользователя
         [HttpPost, Route("registration")]
         public IActionResult Registration(AccountBody value)
         {
             Helpers.Validator validator = new Helpers.Validator { value = value };
 
+            // Проверка на пустоту вводимых значений и на повторение email
             if (validator.DataValidator() != 200) return StatusCode(validator.DataValidator());
+            object locker = new object();
 
-            using AccountContext accountContext = new();
-            List<Account>? accountResult = accountContext.account.ToList();
-
-            if (accountResult.Any(x => x.firstName == value.firstName && x.lastName == value.lastName && x.email == value.email))
+            lock(locker)
             {
-                return StatusCode((int)Status.isAuth);
+                using AccountContext accountContext = new();
+                List<Account>? accountResult = accountContext.account.ToList();
+
+                // Проверка, авторизован ли уже пользователь
+                if (accountResult.Any(x => x.firstName == value.firstName && x.lastName == value.lastName && x.email == value.email)) return StatusCode((int)Status.isAuth);
+
+                Account? account = new Account()
+                {
+                    firstName = value.firstName,
+                    lastName = value.lastName,
+                    email = value.email,
+                    password = value.password
+                };
+
+                accountContext?.AddAsync(account);
+                accountContext?.SaveChangesAsync();
             }
 
-            Account? account = new Account()
+            lock(locker)
             {
-                firstName = value.firstName,
-                lastName = value.lastName,
-                email = value.email,
-                password = value.password
-            };
+                using AccountContext baseAccountContext = new();
+                List<Account>? baseAccountResult = baseAccountContext?.account.ToList();
 
-            accountContext.AddAsync(account);
-            accountContext.SaveChangesAsync();
+                Account? baseAccount = baseAccountResult?.FirstOrDefault(x => x?.email == value.email);
 
-            return Json(account);
+                return Json(baseAccount);
+            }
         }
 
+        // Поиск пользователя по ID
         [HttpGet, Route("accounts/{accountId?}")]
         public IActionResult Information([FromHeader][Required] string Authorize, int? accountId)
         {
 
-            if (DetecUserAuth(Authorize) != 200) return StatusCode(DetecUserAuth(Authorize));
+            if (DetectUserAuth(Authorize) != 200) return StatusCode(DetectUserAuth(Authorize));
 
             try
             {
@@ -71,6 +82,7 @@ namespace BraimChallenge.Controllers
             }
         }
 
+        // Поиск пользоваелей по параметрам
         [HttpGet, Route("accounts/search/{firstName?}/{lastName?}/{email?}/{from?}/{size?}")]
         public IActionResult Search([FromHeader][Required] string Authorize, string firstName, string lastName, string email, int? from = 0, int? size = 10)
         {
@@ -78,7 +90,7 @@ namespace BraimChallenge.Controllers
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
 
-            if (DetecUserAuth(Authorize) != 200) return StatusCode(DetecUserAuth(Authorize));
+            if (DetectUserAuth(Authorize) != 200) return StatusCode(DetectUserAuth(Authorize));
 
             if (from is null || from < 0 
                 || size is null || size <= 0)
@@ -88,41 +100,51 @@ namespace BraimChallenge.Controllers
 
             Account[]? account = accountList.Where(x => x.firstName.ToLower().Contains(firstName.ToLower()) 
                                                             && x.lastName.ToLower().Contains(lastName.ToLower()) 
-                                                            && x.email.ToLower().Contains(email.ToLower())).Skip((int)from).Take((int)size).ToArray();
+                                                            && x.email.ToLower().Contains(email.ToLower())).Skip((int)from).Take((int)size).OrderBy(x => x.id).ToArray();
 
             if (account.Length == 0) return StatusCode((int)Status.notValData);
 
             return Json(account);
         }
 
+        // Изменение данных пользователя
         [HttpPut, Route("accounts/{accountId?}")]
         public IActionResult UpdateAccount([FromHeader][Required] string Authorize, int? accountId, AccountBody accountBody)
         {
-
-            using AccountContext accountContext = new();
-            List<Account> accountList = accountContext.account.ToList();
 
             Helpers.Validator validator = new Helpers.Validator { value = accountBody };
 
             if (validator.DataValidator() != 200) return StatusCode(validator.DataValidator());
 
+            using AccountContext accountContext = new();
+            List<Account> accountList = accountContext.account.ToList();
+
             Account? account = accountList.FirstOrDefault(x => x.id == accountId);
 
             if (account == null) { return StatusCode((int)Status.isAuth); }
+
+            Account? authAccount = accountList.FirstOrDefault(x => x.email == HeaderData(Authorize)[0]);
+
+            if (authAccount?.id != accountId) return StatusCode((int)Status.isAuth);
             
             account.firstName = accountBody.firstName;
             account.lastName = accountBody.lastName;
             account.email = accountBody.email;
             account.password = accountBody.password;
 
+            accountContext.Update(account);
+            accountContext.SaveChangesAsync();
+
             return Json(account);
         }
 
+        // Извелечение данных из заголовка
         [NonAction]
         private string[] HeaderData(string header) => header.Replace("Basic", "").Trim().Split(":");
 
+        // Проверка авторизации
         [NonAction]
-        private int DetecUserAuth(string Authorize)
+        private int DetectUserAuth(string Authorize)
         {
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();

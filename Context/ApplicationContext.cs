@@ -2,6 +2,7 @@
 
 namespace BraimChallenge.Context
 {
+    // Подключение к базе PostgreSql
     public class ApplicationContext : DbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
