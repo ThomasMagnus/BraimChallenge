@@ -1,25 +1,34 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using BraimChallenge.Helpers;
 using BraimChallenge.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace BraimChallenge.Controllers
 {
+    [ApiController]
     public class Location : Controller
     {
-        [HttpGet, Route("locations/{pointId?}")]
-        public IActionResult Information(int? pointId)
+        private Detecters _detecters;
+
+        public Location()
         {
-            if (pointId is null || pointId < 0) return StatusCode((int)Status.error);
+            _detecters = new Detecters();
+        }
+
+        [HttpGet, Route("locations/{pointId?}")]
+        public IActionResult Information([FromHeader][Required] string Authotize, int? pointId)
+        {
+            if (_detecters.DetectAccountId(pointId) != 200) return StatusCode((int)Status.error);
 
             using LocationsContext locationsContext = new();
-            List<Locations> locationsList = locationsContext.locarions.ToList();
+            List<Locations> locationsList = locationsContext.locations.ToList();
 
-            Locations? locations = locationsList.FirstOrDefault(x => x.id == pointId);
-            if (locations != null) return StatusCode((int)Status.isNotId);
+            Locations? location = locationsList.FirstOrDefault(x => x.id == pointId);
+            if (location is null) return StatusCode((int)Status.isNotId);
+            if (_detecters.DetectUserAuth(Authotize) != 200) { return StatusCode((int)Status.notValData); }
 
 
-
-            return Json("");
+            return Json(location);
         }
     }
 }

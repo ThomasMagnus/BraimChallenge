@@ -16,9 +16,6 @@ namespace BraimChallenge.Models
         public string? email { get; set; }
         public string? password { get; set; }
 
-        //public static List<Account> accountList = new List<Account>();
-        //public static Account authAccount { get; set; }
-
     }
 
     public class AccountContext : ApplicationContext

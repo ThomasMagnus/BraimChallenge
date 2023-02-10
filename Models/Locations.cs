@@ -16,6 +16,6 @@ namespace BraimChallenge.Models
 
     public class LocationsContext : ApplicationContext
     {
-        public DbSet<Locations> locarions { get; set; }
+        public DbSet<Locations> locations { get; set; }
     }
 }
