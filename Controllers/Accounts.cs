@@ -61,10 +61,7 @@ namespace BraimChallenge.Controllers
 
             try
             {
-                if (accountId <= 0 || accountId is null)
-                {
-                    return StatusCode((int)Status.error);
-                }
+                if (DetectAccountId(accountId) != 200) return StatusCode(DetectAccountId(accountId));
 
                 using AccountContext accountContext = new();
                 List<Account> accountList = accountContext.account.ToList();
@@ -123,9 +120,7 @@ namespace BraimChallenge.Controllers
 
             if (account == null) { return StatusCode((int)Status.isAuth); }
 
-            Account? authAccount = accountList.FirstOrDefault(x => x.email == HeaderData(Authorize)[0]);
-
-            if (authAccount?.id != accountId) return StatusCode((int)Status.isAuth);
+            if (DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
             
             account.firstName = accountBody.firstName;
             account.lastName = accountBody.lastName;
@@ -136,6 +131,26 @@ namespace BraimChallenge.Controllers
             accountContext.SaveChangesAsync();
 
             return Json(account);
+        }
+
+        // Удаление аккаунта
+        [HttpDelete, Route("accounts/{accountId?}")]
+        public IActionResult DeleteAccount([FromHeader] string Authorize, int? accountId)
+        {
+            if (DetectAccountId(accountId) != 200) return StatusCode(DetectAccountId(accountId));
+            if (DetectUserAuth(Authorize) != 200) return StatusCode(DetectUserAuth(Authorize));
+
+            using AccountContext accountContext = new();
+            List<Account> accountList = accountContext.account.ToList();
+            Account? account = accountList.FirstOrDefault(x => x.id == accountId);
+
+            if (account == null) { return StatusCode((int)Status.isAuth); }
+            if (DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
+
+            accountContext.Remove(account);
+            accountContext.SaveChangesAsync();
+
+            return Json("Success");
         }
 
         // Извелечение данных из заголовка
@@ -155,6 +170,28 @@ namespace BraimChallenge.Controllers
             bool userAuth = accountList.Any(x => x.email == email && x.password == password);
 
             if (!userAuth) return (int)Status.notValData;
+
+            return (int)Status.success;
+        }
+
+        // Проверка accountId
+        [NonAction]
+        public int DetectAccountId(int? accountId)
+        {
+            if (accountId <= 0 || accountId is null)
+            {
+                return (int)Status.error;
+            }
+
+            return (int)Status.success;
+        }
+
+        [NonAction]
+        public int DetectAccount(int? accountId, string Authorize, List<Account> accountList)
+        {
+            Account? authAccount = accountList.FirstOrDefault(x => x.email == HeaderData(Authorize)[0]);
+
+            if (authAccount?.id != accountId) return (int)Status.isAuth;
 
             return (int)Status.success;
         }
