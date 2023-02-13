@@ -26,7 +26,7 @@ namespace BraimChallenge.Services
         }
 
         // Проверка accountId
-        public int DetectAccountId(int? accountId)
+        public int DetectId(int? accountId)
         {
             if (accountId <= 0 || accountId is null)
             {

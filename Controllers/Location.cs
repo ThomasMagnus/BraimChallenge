@@ -26,7 +26,7 @@ namespace BraimChallenge.Controllers
         [HttpGet, Route("locations/{pointId?}")]
         public IActionResult Information([FromHeader][Required] string Authotize, int? pointId)
         {
-            if (_detecters.DetectAccountId(pointId) != 200) return StatusCode((int)Status.error);
+            if (_detecters.DetectId(pointId) != 200) return StatusCode((int)Status.error);
 
             using LocationsContext locationsContext = new();
             List<Locations> locationsList = locationsContext.locations.ToList();
@@ -40,14 +40,14 @@ namespace BraimChallenge.Controllers
 
         // API 2: Добавление точки локации животных
         [HttpPost, Route("locations")]
-        public IActionResult LocationPost([FromHeader][Required] string Autorize, LocationBody locationBody)
+        public IActionResult LocationPost([FromHeader][Required] string Authorize, LocationBody locationBody)
         {
             object lockObject = new Object();
 
             lock(lockObject)
             {
                 if (_locationDetecter.DetectPointer(locationBody.latitude, locationBody.longitude) != 200) return StatusCode((int)Status.error);
-                if (_detecters.DetectUserAuth(Autorize) != 200) return StatusCode((int)Status.notValData);
+                if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
 
                 using LocationsContext locationsContext = new();
                 List<Locations> locationsList = locationsContext.locations.ToList();
@@ -72,5 +72,33 @@ namespace BraimChallenge.Controllers
                 return Json(locationsResult);
             }
         }
+
+        // API 3: Изменение точки локации животных 
+        [HttpPut, Route("locations/{pointId?}")]
+        public IActionResult UpdateLocationPoint([FromHeader][Required] string Authorize, int? pointId, LocationBody locationBody)
+        {
+            if (_detecters.DetectId(pointId) != 200) return StatusCode((int)Status.error);
+            if (_locationDetecter.DetectPointer(locationBody.latitude, locationBody.longitude) != 200) return StatusCode((int)Status.error);
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using LocationsContext locationsContext = new();
+            List<Locations> locationsList = locationsContext.locations.ToList();
+
+            if (_locationDetecter.DetectDoublePointer(locationBody, locationsList) != 200) return StatusCode((int)Status.isDouble);
+
+            Locations? locations = locationsList.FirstOrDefault(x => x.id == pointId);
+
+            if (locations is null) return StatusCode((int)Status.isNotId);
+
+            locations.latitude = locationBody.latitude;
+            locations.longitude = locationBody.longitude;
+
+            locationsContext.Update(locations);
+            locationsContext.SaveChangesAsync();
+
+            return Json(locations);
+        }
+
+        // API 4: Удаление точки локации животных 
     }
 }

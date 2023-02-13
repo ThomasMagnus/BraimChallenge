@@ -31,7 +31,7 @@ namespace BraimChallenge.Controllers
 
             try
             {
-                if (_detecters.DetectAccountId(accountId) != 200) return StatusCode(_detecters.DetectAccountId(accountId));
+                if (_detecters.DetectId(accountId) != 200) return StatusCode(_detecters.DetectId(accountId));
 
                 using AccountContext accountContext = new();
                 List<Account> accountList = accountContext.account.ToList();
@@ -105,7 +105,7 @@ namespace BraimChallenge.Controllers
         [HttpDelete, Route("accounts/{accountId?}")]
         public IActionResult DeleteAccount([FromHeader][Required] string Authorize, int? accountId)
         {
-            if (_detecters?.DetectAccountId(accountId) != 200) return StatusCode(_detecters.DetectAccountId(accountId));
+            if (_detecters?.DetectId(accountId) != 200) return StatusCode(_detecters.DetectId(accountId));
             if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
 
             using AccountContext accountContext = new();
