@@ -24,7 +24,7 @@ namespace BraimChallenge.Controllers
 
         // API 1: Получение информации об аккаунте пользователя
         [HttpGet, Route("accounts/{accountId?}")]
-        public IActionResult Information([FromHeader][Required] string Authorize, int? accountId)
+        public IActionResult Information([FromHeader][Required] string Authorize, long? accountId)
         {
 
             if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
@@ -76,7 +76,7 @@ namespace BraimChallenge.Controllers
 
         // API 3: Обновление данных аккаунта пользователя
         [HttpPut, Route("accounts/{accountId?}")]
-        public IActionResult UpdateAccount([FromHeader][Required] string Authorize, int? accountId, AccountBody accountBody)
+        public IActionResult UpdateAccount([FromHeader][Required] string Authorize, long? accountId, AccountBody accountBody)
         {
 
             if (_validator.DataValidator() != 200) return StatusCode(_validator.DataValidator());
@@ -103,7 +103,7 @@ namespace BraimChallenge.Controllers
 
         // API 4: Удаление аккаунта пользователя
         [HttpDelete, Route("accounts/{accountId?}")]
-        public IActionResult DeleteAccount([FromHeader][Required] string Authorize, int? accountId)
+        public IActionResult DeleteAccount([FromHeader][Required] string Authorize, long? accountId)
         {
             if (_detecters?.DetectId(accountId) != 200) return StatusCode(_detecters.DetectId(accountId));
             if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));

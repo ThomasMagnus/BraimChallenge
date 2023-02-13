@@ -26,7 +26,7 @@ namespace BraimChallenge.Services
         }
 
         // Проверка accountId
-        public int DetectId(int? accountId)
+        public int DetectId(long? accountId)
         {
             if (accountId <= 0 || accountId is null)
             {
@@ -37,7 +37,7 @@ namespace BraimChallenge.Services
         }
 
         // Проверка, тот ли аккаунт
-        public int DetectAccount(int? accountId, string Authorize, List<Account> accountList)
+        public int DetectAccount(long? accountId, string Authorize, List<Account> accountList)
         {
             Account? authAccount = accountList.FirstOrDefault(x => x.email == HeaderData(Authorize)[0]);
 

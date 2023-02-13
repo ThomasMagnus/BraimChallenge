@@ -40,7 +40,7 @@ namespace BraimChallenge.Controllers
 
         // API 2: Добавление точки локации животных
         [HttpPost, Route("locations")]
-        public IActionResult LocationPost([FromHeader][Required] string Authorize, LocationBody locationBody)
+        public IActionResult AddLocationPoint([FromHeader][Required] string Authorize, LocationBody locationBody)
         {
             object lockObject = new Object();
 
@@ -101,7 +101,7 @@ namespace BraimChallenge.Controllers
 
         // API 4: Удаление точки локации животных 
         [HttpDelete, Route("locations/{pointId?}")]
-        public IActionResult DeletePointLocation([FromHeader][Required] string Authorize, int? pointId)
+        public IActionResult DeleteLocatioPoint([FromHeader][Required] string Authorize, int? pointId)
         {
             if (_detecters.DetectId(pointId) != 200) return StatusCode((int)Status.error);
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
