@@ -1,4 +1,4 @@
-﻿namespace BraimChallenge.Helpers
+﻿namespace BraimChallenge.RequestBody
 {
     public class AccountBody
     {

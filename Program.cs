@@ -1,7 +1,14 @@
 using BraimChallenge.Helpers;
+using BraimChallenge.IServices;
+using BraimChallenge.Services;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<IDetecter, Detecters>();
+builder.Services.AddScoped<IValidator, Validator>();
+builder.Services.AddScoped<ILocationDetecter, LocationDetecter>();
+
+var allServices = builder.Services;
 
 
 builder.Services.AddControllers();

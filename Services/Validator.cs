@@ -1,9 +1,11 @@
-﻿using BraimChallenge.IHelpers;
-using BraimChallenge.Models;
+﻿using BraimChallenge.Models;
 using Microsoft.AspNetCore.Mvc;
 using BraimChallenge.Context;
+using BraimChallenge.RequestBody;
+using BraimChallenge.IServices;
+using BraimChallenge.Helpers;
 
-namespace BraimChallenge.Helpers
+namespace BraimChallenge.Services
 {
     public class Validator : IValidator
     {
@@ -12,8 +14,8 @@ namespace BraimChallenge.Helpers
         // Проверка на значения, которые вводит пользователь
         public bool ValidateData()
         {
-            if (String.IsNullOrWhiteSpace(value.firstName) || String.IsNullOrWhiteSpace(value.lastName) ||
-                String.IsNullOrWhiteSpace(value.password) || String.IsNullOrWhiteSpace(value.email))
+            if (string.IsNullOrWhiteSpace(value.firstName) || string.IsNullOrWhiteSpace(value.lastName) ||
+                string.IsNullOrWhiteSpace(value.password) || string.IsNullOrWhiteSpace(value.email))
             {
                 return false;
             }
@@ -50,7 +52,7 @@ namespace BraimChallenge.Helpers
 
             if (accountList.Count != 0)
             {
-                if (!ValidateEmail()) return (int)Status.isEmail;
+                if (!ValidateEmail()) return (int)Status.isDouble;
             }
 
             return (int)Status.success;

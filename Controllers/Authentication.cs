@@ -1,5 +1,8 @@
 ﻿using BraimChallenge.Helpers;
+using BraimChallenge.Services;
 using BraimChallenge.Models;
+using BraimChallenge.RequestBody;
+using BraimChallenge.IServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BraimChallenge.Controllers
@@ -7,14 +10,17 @@ namespace BraimChallenge.Controllers
     [ApiController]
     public class Authentication : Controller
     {
-        // Регистрация пользователя
+        private IValidator? _validator;
+
+        public Authentication(IValidator validator) => _validator = validator;
+
+        // API 1:  Регистрация нового аккаунта
         [HttpPost, Route("registration")]
         public IActionResult Registration(AccountBody value)
         {
-            Helpers.Validator validator = new Helpers.Validator { value = value };
-
             // Проверка на пустоту вводимых значений и на повторение email
-            if (validator.DataValidator() != 200) return StatusCode(validator.DataValidator());
+            if (_validator?.DataValidator() != 200) return StatusCode(_validator.DataValidator());
+
             object locker = new object();
 
             lock (locker)

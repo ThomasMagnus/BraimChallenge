@@ -5,29 +5,33 @@ using BraimChallenge.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using BraimChallenge.RequestBody;
+using BraimChallenge.IServices;
 
 namespace BraimChallenge.Controllers
 {
     [ApiController]
     public class Accounts : Controller
     {
-        Detecters detecters;
+        private IDetecter? _detecters;
+        private IValidator? _validator;
 
-        public Accounts()
+        public Accounts(IDetecter detecter, IValidator? validator)
         {
-            detecters = new Detecters();
+            _detecters = detecter;
+            _validator = validator;
         }
 
-        // Поиск пользователя по ID
+        // API 1: Получение информации об аккаунте пользователя
         [HttpGet, Route("accounts/{accountId?}")]
         public IActionResult Information([FromHeader][Required] string Authorize, int? accountId)
         {
 
-            if (detecters.DetectUserAuth(Authorize) != 200) return StatusCode(detecters.DetectUserAuth(Authorize));
+            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
 
             try
             {
-                if (detecters.DetectAccountId(accountId) != 200) return StatusCode(detecters.DetectAccountId(accountId));
+                if (_detecters.DetectAccountId(accountId) != 200) return StatusCode(_detecters.DetectAccountId(accountId));
 
                 using AccountContext accountContext = new();
                 List<Account> accountList = accountContext.account.ToList();
@@ -45,7 +49,7 @@ namespace BraimChallenge.Controllers
             }
         }
 
-        // Поиск пользоваелей по параметрам
+        // API 2: Поиск аккаунтов пользователей по параметрам
         [HttpGet, Route("accounts/search/{firstName?}/{lastName?}/{email?}/{from?}/{size?}")]
         public IActionResult Search([FromHeader][Required] string Authorize, string firstName, string lastName, string email, int? from = 0, int? size = 10)
         {
@@ -53,7 +57,7 @@ namespace BraimChallenge.Controllers
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
 
-            if (detecters.DetectUserAuth(Authorize) != 200) return StatusCode(detecters.DetectUserAuth(Authorize));
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
 
             if (from is null || from < 0 
                 || size is null || size <= 0)
@@ -70,14 +74,12 @@ namespace BraimChallenge.Controllers
             return Json(account);
         }
 
-        // Изменение данных пользователя
+        // API 3: Обновление данных аккаунта пользователя
         [HttpPut, Route("accounts/{accountId?}")]
         public IActionResult UpdateAccount([FromHeader][Required] string Authorize, int? accountId, AccountBody accountBody)
         {
 
-            Helpers.Validator validator = new Helpers.Validator { value = accountBody };
-
-            if (validator.DataValidator() != 200) return StatusCode(validator.DataValidator());
+            if (_validator.DataValidator() != 200) return StatusCode(_validator.DataValidator());
 
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
@@ -86,7 +88,7 @@ namespace BraimChallenge.Controllers
 
             if (account == null) { return StatusCode((int)Status.isAuth); }
 
-            if (detecters.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
+            if (_detecters.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
             
             account.firstName = accountBody.firstName;
             account.lastName = accountBody.lastName;
@@ -99,19 +101,19 @@ namespace BraimChallenge.Controllers
             return Json(account);
         }
 
-        // Удаление аккаунта
+        // API 4: Удаление аккаунта пользователя
         [HttpDelete, Route("accounts/{accountId?}")]
         public IActionResult DeleteAccount([FromHeader][Required] string Authorize, int? accountId)
         {
-            if (detecters.DetectAccountId(accountId) != 200) return StatusCode(detecters.DetectAccountId(accountId));
-            if (detecters.DetectUserAuth(Authorize) != 200) return StatusCode(detecters.DetectUserAuth(Authorize));
+            if (_detecters?.DetectAccountId(accountId) != 200) return StatusCode(_detecters.DetectAccountId(accountId));
+            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
 
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
             Account? account = accountList.FirstOrDefault(x => x.id == accountId);
 
             if (account == null) { return StatusCode((int)Status.isAuth); }
-            if (detecters.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
+            if (_detecters?.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
 
             accountContext.Remove(account);
             accountContext.SaveChangesAsync();

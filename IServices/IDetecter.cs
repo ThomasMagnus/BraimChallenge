@@ -1,6 +1,6 @@
 ﻿using BraimChallenge.Models;
 
-namespace BraimChallenge.IHelpers
+namespace BraimChallenge.IServices
 {
     public interface IDetecter
     {

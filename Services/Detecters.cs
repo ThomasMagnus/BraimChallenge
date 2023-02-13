@@ -1,8 +1,9 @@
-﻿using BraimChallenge.IHelpers;
+﻿using BraimChallenge.Helpers;
+using BraimChallenge.IServices;
 using BraimChallenge.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BraimChallenge.Helpers
+namespace BraimChallenge.Services
 {
     public class Detecters : IDetecter
     {

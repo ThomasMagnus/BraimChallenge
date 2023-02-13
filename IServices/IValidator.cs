@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace BraimChallenge.IHelpers
+namespace BraimChallenge.IServices
 {
     public interface IValidator
     {
