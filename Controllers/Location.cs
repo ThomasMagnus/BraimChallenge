@@ -100,5 +100,23 @@ namespace BraimChallenge.Controllers
         }
 
         // API 4: Удаление точки локации животных 
+        [HttpDelete, Route("locations/{pointId?}")]
+        public IActionResult DeletePointLocation([FromHeader][Required] string Authorize, int? pointId)
+        {
+            if (_detecters.DetectId(pointId) != 200) return StatusCode((int)Status.error);
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using LocationsContext locationsContext = new();
+            List<Locations> locationsList = locationsContext.locations.ToList();
+
+            Locations? locations = locationsList.FirstOrDefault(x => x.id == pointId);
+
+            if (locations is null) return StatusCode((int)Status.isNotId);
+
+            locationsContext.Remove(locations);
+            locationsContext.SaveChangesAsync();
+
+            return StatusCode((int)Status.success);
+        }
     }
 }

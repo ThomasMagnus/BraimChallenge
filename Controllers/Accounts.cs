@@ -118,7 +118,7 @@ namespace BraimChallenge.Controllers
             accountContext.Remove(account);
             accountContext.SaveChangesAsync();
 
-            return Json("Success");
+            return StatusCode((int)Status.success);
         }
 
     }
