@@ -15,11 +15,5 @@ namespace BraimChallenge.Controllers
         {
             return Json("");
         }
-
-        [HttpGet, Route("animals/types/{typeId?}")]
-        public JsonResult Types()
-        {
-            return Json("");
-        }
     }
 }

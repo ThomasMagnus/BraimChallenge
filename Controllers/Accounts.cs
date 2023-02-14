@@ -78,7 +78,6 @@ namespace BraimChallenge.Controllers
         [HttpPut, Route("accounts/{accountId?}")]
         public IActionResult UpdateAccount([FromHeader][Required] string Authorize, long? accountId, AccountBody accountBody)
         {
-
             if (_validator.DataValidator() != 200) return StatusCode(_validator.DataValidator());
 
             using AccountContext accountContext = new();

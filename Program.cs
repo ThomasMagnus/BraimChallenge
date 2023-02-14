@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IDetecter, Detecters>();
 builder.Services.AddScoped<IValidator, Validator>();
 builder.Services.AddScoped<ILocationDetecter, LocationDetecter>();
+builder.Services.AddScoped<IAnimalTypeService, AnimalTypeService>();
 
 var allServices = builder.Services;
 
