@@ -19,7 +19,7 @@ namespace BraimChallenge.Controllers
         public IActionResult Registration(AccountBody value)
         {
             // Проверка на пустоту вводимых значений и на повторение email
-            if (_validator?.DataValidator() != 200) return StatusCode(_validator.DataValidator());
+            if (_validator?.DataValidator() != 200) return StatusCode(_validator!.DataValidator());
 
             object locker = new object();
 

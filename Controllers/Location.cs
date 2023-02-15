@@ -75,7 +75,7 @@ namespace BraimChallenge.Controllers
 
         // API 3: Изменение точки локации животных 
         [HttpPut, Route("locations/{pointId?}")]
-        public IActionResult UpdateLocationPoint([FromHeader][Required] string Authorize, int? pointId, LocationBody locationBody)
+        public async Task<IActionResult> UpdateLocationPoint([FromHeader][Required] string Authorize, int? pointId, LocationBody locationBody)
         {
             if (_detecters.DetectId(pointId) != 200) return StatusCode((int)Status.error);
             if (_locationDetecter.DetectPointer(locationBody.latitude, locationBody.longitude) != 200) return StatusCode((int)Status.error);
@@ -94,14 +94,14 @@ namespace BraimChallenge.Controllers
             locations.longitude = locationBody.longitude;
 
             locationsContext.Update(locations);
-            locationsContext.SaveChangesAsync();
+            await locationsContext.SaveChangesAsync();
 
             return Json(locations);
         }
 
         // API 4: Удаление точки локации животных 
         [HttpDelete, Route("locations/{pointId?}")]
-        public IActionResult DeleteLocatioPoint([FromHeader][Required] string Authorize, int? pointId)
+        public async Task<IActionResult> DeleteLocatioPoint([FromHeader][Required] string Authorize, int? pointId)
         {
             if (_detecters.DetectId(pointId) != 200) return StatusCode((int)Status.error);
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
@@ -114,7 +114,7 @@ namespace BraimChallenge.Controllers
             if (locations is null) return StatusCode((int)Status.isNotId);
 
             locationsContext.Remove(locations);
-            locationsContext.SaveChangesAsync();
+            await locationsContext.SaveChangesAsync();
 
             return StatusCode((int)Status.success);
         }

@@ -27,7 +27,7 @@ namespace BraimChallenge.Controllers
         public IActionResult Information([FromHeader][Required] string Authorize, long? accountId)
         {
 
-            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
+            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters!.DetectUserAuth(Authorize));
 
             try
             {
@@ -57,7 +57,7 @@ namespace BraimChallenge.Controllers
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
 
-            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
+            if (_detecters!.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
 
             if (from is null || from < 0 
                 || size is null || size <= 0)
@@ -65,9 +65,9 @@ namespace BraimChallenge.Controllers
                 return StatusCode((int)Status.error);
             };
 
-            Account[]? account = accountList.Where(x => x.firstName.ToLower().Contains(firstName.ToLower()) 
-                                                            && x.lastName.ToLower().Contains(lastName.ToLower()) 
-                                                            && x.email.ToLower().Contains(email.ToLower())).Skip((int)from).Take((int)size).OrderBy(x => x.id).ToArray();
+            Account[]? account = accountList.Where(x => x.firstName!.ToLower().Contains(firstName.ToLower()) 
+                                                            && x.lastName!.ToLower().Contains(lastName.ToLower()) 
+                                                            && x.email!.ToLower().Contains(email.ToLower())).Skip((int)from).Take((int)size).OrderBy(x => x.id).ToArray();
 
             if (account.Length == 0) return StatusCode((int)Status.notValData);
 
@@ -76,9 +76,9 @@ namespace BraimChallenge.Controllers
 
         // API 3: Обновление данных аккаунта пользователя
         [HttpPut, Route("accounts/{accountId?}")]
-        public IActionResult UpdateAccount([FromHeader][Required] string Authorize, long? accountId, AccountBody accountBody)
+        public async Task<IActionResult> UpdateAccount([FromHeader][Required] string Authorize, long? accountId, AccountBody accountBody)
         {
-            if (_validator.DataValidator() != 200) return StatusCode(_validator.DataValidator());
+            if (_validator!.DataValidator() != 200) return StatusCode(_validator.DataValidator());
 
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
@@ -87,7 +87,7 @@ namespace BraimChallenge.Controllers
 
             if (account == null) { return StatusCode((int)Status.isAuth); }
 
-            if (_detecters.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
+            if (_detecters!.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
             
             account.firstName = accountBody.firstName;
             account.lastName = accountBody.lastName;
@@ -95,17 +95,17 @@ namespace BraimChallenge.Controllers
             account.password = accountBody.password;
 
             accountContext.Update(account);
-            accountContext.SaveChangesAsync();
+            await accountContext.SaveChangesAsync();
 
             return Json(account);
         }
 
         // API 4: Удаление аккаунта пользователя
         [HttpDelete, Route("accounts/{accountId?}")]
-        public IActionResult DeleteAccount([FromHeader][Required] string Authorize, long? accountId)
+        public async Task<IActionResult> DeleteAccount([FromHeader][Required] string Authorize, long? accountId)
         {
-            if (_detecters?.DetectId(accountId) != 200) return StatusCode(_detecters.DetectId(accountId));
-            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters.DetectUserAuth(Authorize));
+            if (_detecters?.DetectId(accountId) != 200) return StatusCode(_detecters!.DetectId(accountId));
+            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters!.DetectUserAuth(Authorize));
 
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
@@ -115,7 +115,7 @@ namespace BraimChallenge.Controllers
             if (_detecters?.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
 
             accountContext.Remove(account);
-            accountContext.SaveChangesAsync();
+            await accountContext.SaveChangesAsync();
 
             return StatusCode((int)Status.success);
         }
