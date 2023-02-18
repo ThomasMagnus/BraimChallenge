@@ -10,13 +10,11 @@ namespace BraimChallenge.Controllers
     public class AnimalsType : Controller
     {
         private IDetecter? _detecter;
-        private IValidator _validator;
         private IAnimalTypeService _animalTypeService;
 
-        public AnimalsType(IDetecter detecter, IValidator validator, IAnimalTypeService animalTypeService)
+        public AnimalsType(IDetecter detecter, IAnimalTypeService animalTypeService)
         {
             _detecter = detecter;
-            _validator = validator;
             _animalTypeService = animalTypeService;
         }
 

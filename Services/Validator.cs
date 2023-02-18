@@ -9,10 +9,8 @@ namespace BraimChallenge.Services
 {
     public class Validator : IValidator
     {
-        public AccountBody value { get; set; }
-
         // Проверка на значения, которые вводит пользователь
-        public bool ValidateData()
+        public bool ValidateData(AccountBody value)
         {
             if (string.IsNullOrWhiteSpace(value.firstName) || string.IsNullOrWhiteSpace(value.lastName) ||
                 string.IsNullOrWhiteSpace(value.password) || string.IsNullOrWhiteSpace(value.email))
@@ -26,7 +24,7 @@ namespace BraimChallenge.Services
         }
 
         // Проверка, зарегестрирован ли пользователь с таким email
-        public bool ValidateEmail()
+        public bool ValidateEmail(AccountBody value)
         {
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
@@ -43,16 +41,16 @@ namespace BraimChallenge.Services
         }
 
         // Объединение проверок
-        public int DataValidator()
+        public int DataValidator(AccountBody value)
         {
-            if (!ValidateData()) return (int)Status.error;
+            if (!ValidateData(value)) return (int)Status.error;
 
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
 
             if (accountList.Count != 0)
             {
-                if (!ValidateEmail()) return (int)Status.isDouble;
+                if (!ValidateEmail(value)) return (int)Status.isDouble;
             }
 
             return (int)Status.success;

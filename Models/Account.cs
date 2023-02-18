@@ -10,7 +10,7 @@ namespace BraimChallenge.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long id { get; set; }
+        public int id { get; set; }
         public string? firstName { get; set; }
         public string? lastName { get; set; }
         public string? email { get; set; }

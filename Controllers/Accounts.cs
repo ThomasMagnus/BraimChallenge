@@ -24,10 +24,10 @@ namespace BraimChallenge.Controllers
 
         // API 1: Получение информации об аккаунте пользователя
         [HttpGet, Route("accounts/{accountId?}")]
-        public IActionResult Information([FromHeader][Required] string Authorize, long? accountId)
+        public IActionResult Information([FromHeader][Required] string Authorize, int? accountId)
         {
 
-            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode(_detecters!.DetectUserAuth(Authorize));
+            if (_detecters?.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.isAuth);
 
             try
             {
@@ -78,7 +78,7 @@ namespace BraimChallenge.Controllers
         [HttpPut, Route("accounts/{accountId?}")]
         public async Task<IActionResult> UpdateAccount([FromHeader][Required] string Authorize, long? accountId, AccountBody accountBody)
         {
-            if (_validator!.DataValidator() != 200) return StatusCode(_validator.DataValidator());
+            if (_validator!.DataValidator(accountBody) != 200) return StatusCode(_validator.DataValidator(accountBody));
 
             using AccountContext accountContext = new();
             List<Account> accountList = accountContext.account.ToList();
@@ -86,7 +86,6 @@ namespace BraimChallenge.Controllers
             Account? account = accountList.FirstOrDefault(x => x.id == accountId);
 
             if (account == null) { return StatusCode((int)Status.isAuth); }
-
             if (_detecters!.DetectAccount(accountId, Authorize, accountList) != 200) { return StatusCode((int)Status.isAuth); }
             
             account.firstName = accountBody.firstName;

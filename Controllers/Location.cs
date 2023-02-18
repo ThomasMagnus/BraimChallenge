@@ -12,13 +12,11 @@ namespace BraimChallenge.Controllers
     public class Location : Controller
     {
         private IDetecter _detecters;
-        private IValidator _validator;
         private ILocationDetecter _locationDetecter;
 
-        public Location(IDetecter detecter, IValidator validator, ILocationDetecter locationDetecter)
+        public Location(IDetecter detecter, ILocationDetecter locationDetecter)
         {
             _detecters = detecter;
-            _validator = validator;
             _locationDetecter = locationDetecter;
         }
 

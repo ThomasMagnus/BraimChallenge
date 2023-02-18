@@ -8,6 +8,7 @@ builder.Services.AddScoped<IDetecter, Detecters>();
 builder.Services.AddScoped<IValidator, Validator>();
 builder.Services.AddScoped<ILocationDetecter, LocationDetecter>();
 builder.Services.AddScoped<IAnimalTypeService, AnimalTypeService>();
+builder.Services.AddScoped<IAnimalService, AnimalService>();
 
 var allServices = builder.Services;
 

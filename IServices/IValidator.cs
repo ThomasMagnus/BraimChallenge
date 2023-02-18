@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BraimChallenge.RequestBody;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BraimChallenge.IServices
 {
     public interface IValidator
     {
-        public bool ValidateEmail();
-        public bool ValidateData();
-        public int DataValidator();
+        public bool ValidateEmail(AccountBody value);
+        public bool ValidateData(AccountBody value);
+        public int DataValidator(AccountBody value);
     }
 }
