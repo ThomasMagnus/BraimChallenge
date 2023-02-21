@@ -7,6 +7,10 @@ using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using BraimChallenge.RequestBody;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using BraimChallenge.Context;
+using System.Collections;
+using System.Data.SqlTypes;
 
 namespace BraimChallenge.Controllers
 {
@@ -42,13 +46,85 @@ namespace BraimChallenge.Controllers
             return Json(animals);
         }
 
+        // API 2: Поиск животных по параметрам
         [HttpGet, Route("animals/search/")]
-        public JsonResult Search([FromHeader][Required] string Authorize, [FromQuery] DateTime startDateTime, [FromQuery] DateTime endDateTime,
-                                    [FromQuery] int? chipperId, [FromQuery] long? chippingLocationId, [FromQuery] string lifeStatus, [FromQuery] string gender,
+        public IActionResult Search([FromHeader][Required] string Authorize, [FromQuery] DateTime startDateTime, [FromQuery] DateTime endDateTime,
+                                    [FromQuery] int? chipperId, [FromQuery] long? chippingLocationId, [FromQuery] string? lifeStatus, [FromQuery] string? gender,
                                     [FromQuery] int? from, [FromQuery] int? size)
         {
+            if (from < 0 || size <= 0) return StatusCode((int)Status.error);
+            if (_detecters.DetectId(chipperId) != 200 || _detecters.DetectId(chipperId) != 200) return StatusCode((int)Status.error);
 
-            return Json("");
+            if (!String.IsNullOrEmpty(lifeStatus?.Trim())) if (!new string[2] { "ALIVE", "DEAD" }.Contains(lifeStatus.ToUpper())) return StatusCode((int)Status.error);
+            if (!String.IsNullOrEmpty(gender?.Trim())) if (!new string[3] { "MALE", "FEMALE", "OTHER" }.Contains(gender.ToUpper())) return StatusCode((int)Status.error);
+
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            List<Animals> animalsArray = new List<Animals>();
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(ApplicationContext.connectionString))
+            {
+                string commandString = "SELECT * FROM animal WHERE ";
+                try
+                {
+                    connection.Open();
+                    List<KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> requestQuery = Request.Query.ToList();
+
+                    for (int i = 0; i < requestQuery.Count; i++)
+                    {
+                        if (requestQuery[i].Key == "startDateTime")
+                        {
+                            commandString += $"chippingdatetime>='{requestQuery[i].Value}' AND ";
+                            continue;
+                        }
+                        else if (requestQuery[i].Key == "endDateTime")
+                        {
+                            commandString += $"chippingdatetime<='{requestQuery[i].Value}' AND ";
+                            continue;
+                        }
+
+                        if (i == Request.Query.Count - 3)
+                        {
+                            commandString += $"{requestQuery[i].Key}='{requestQuery[i].Value}'";
+                            break;
+                        }
+
+                        commandString += $"{requestQuery[i].Key}='{requestQuery[i].Value}' AND ";
+                    }
+
+                    commandString += $" ORDER BY id LIMIT {size} OFFSET {from}";
+                } catch (Exception ex) { Console.WriteLine(ex.Message); }
+
+                using (NpgsqlCommand command = new NpgsqlCommand(commandString, connection))
+                {
+                    try
+                    {
+                        var reader = command.ExecuteReader();
+
+                        while (reader.Read())
+                        {
+                            animalsArray.Add(new Animals
+                            {
+                                id = int.Parse(reader["id"].ToString()),
+                                animaltypes = (long[])reader["animaltypes"],
+                                weight = int.Parse(reader["weight"].ToString()),
+                                length = int.Parse(reader["length"].ToString()),
+                                height = int.Parse(reader["height"].ToString()),
+                                gender = reader["gender"].ToString(),
+                                chipperid = int.Parse(reader["height"].ToString()),
+                                chippinglocationid = int.Parse(reader["chippinglocationid"].ToString()),
+                                lifestatus = reader["lifestatus"].ToString(),
+                                chippingdatetime = (DateTime)reader["chippingdatetime"],
+                            });
+
+                        }
+                        reader.Close();
+                    } catch (Exception ex) { Console.WriteLine(ex.Message); }
+
+                }
+
+                return Json(animalsArray);
+            }
         }
 
         // API 3: Добавление нового животного 
