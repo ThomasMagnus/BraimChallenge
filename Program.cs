@@ -12,13 +12,13 @@ builder.Services.AddScoped<IAnimalService, AnimalService>();
 
 var allServices = builder.Services;
 
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo() { Title = "MyService", Version = "v1" });
 });
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var app = builder.Build();
 

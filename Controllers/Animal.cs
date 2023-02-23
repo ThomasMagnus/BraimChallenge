@@ -1,16 +1,12 @@
 ﻿using BraimChallenge.Helpers;
 using BraimChallenge.IServices;
-using BraimChallenge.Services;
 using BraimChallenge.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection;
 using BraimChallenge.RequestBody;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using BraimChallenge.Context;
-using System.Collections;
-using System.Data.SqlTypes;
 
 namespace BraimChallenge.Controllers
 {
@@ -55,8 +51,8 @@ namespace BraimChallenge.Controllers
             if (from < 0 || size <= 0) return StatusCode((int)Status.error);
             if (_detecters.DetectId(chipperId) != 200 || _detecters.DetectId(chipperId) != 200) return StatusCode((int)Status.error);
 
-            if (!String.IsNullOrEmpty(lifeStatus?.Trim())) if (!new string[2] { "ALIVE", "DEAD" }.Contains(lifeStatus.ToUpper())) return StatusCode((int)Status.error);
-            if (!String.IsNullOrEmpty(gender?.Trim())) if (!new string[3] { "MALE", "FEMALE", "OTHER" }.Contains(gender.ToUpper())) return StatusCode((int)Status.error);
+            if (!String.IsNullOrEmpty(lifeStatus?.Trim())) if (_animalService.CheckGender(gender) != 200) return StatusCode((int)Status.error);
+            if (!String.IsNullOrEmpty(gender?.Trim())) if (_animalService.CheckLifeStatus(lifeStatus) != 200) return StatusCode((int)Status.error);
 
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
 
@@ -131,8 +127,9 @@ namespace BraimChallenge.Controllers
         [HttpPost, Route("animals")]
         public async Task<IActionResult> AddAnimal([FromHeader][Required] string Authorize, AnimalsBody animalBody)
         {
-            if (_animalService.CheckingForZero(_detecters, animalBody) != 200) return StatusCode((int)Status.error);
-            if (animalBody.gender is null || !new string[3] { "MALE", "FEMALE", "OTHER" }.Contains(animalBody.gender)) return StatusCode((int)Status.error);
+            if (_animalService.CheckingForZero(_detecters, animalBody.weight, animalBody.height, animalBody.length, animalBody.chipperid, animalBody.chippinglocationid) != 200) 
+                return StatusCode((int)Status.error);
+            if (_animalService.CheckGender(animalBody?.gender) != 200) return StatusCode((int)Status.error);
             if (animalBody.animaltypes is null || animalBody.animaltypes.Length <= 0) return StatusCode((int)Status.error);
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
 
@@ -162,6 +159,52 @@ namespace BraimChallenge.Controllers
             {
                 return StatusCode((int)Status.error);
             }
+        }
+
+        // API 4: Обновление информации о животном 
+        [HttpPut, Route("animals/{animalId?}")]
+        public async Task<IActionResult> UpdateAnimal([FromHeader][Required] string Authorize, long? animalId, UpdateAnimalBody updateAnimalBody)
+        {
+            if (_animalService.CheckingForZero(_detecters, updateAnimalBody.weight, updateAnimalBody.height,
+                updateAnimalBody.length, updateAnimalBody.chipperid, updateAnimalBody.chippinglocationid) != 200)
+            {
+                return StatusCode((int)Status.error);
+            }
+
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            if (_animalService.CheckGender(updateAnimalBody?.gender) != 200) return StatusCode((int)Status.error);
+            if (_animalService.CheckLifeStatus(updateAnimalBody?.lifestatus) != 200) return StatusCode((int)Status.error);
+
+            using AnimalsContext animalsContext = new();
+            using AccountContext accountContext = new AccountContext();
+            using LocationsContext locationContext = new LocationsContext();
+
+            List<Animals> animalsList = animalsContext.animal.ToList();
+            List<Account> accountList = accountContext.account.ToList();
+            List<Locations> locationsList = locationContext.locations.ToList();
+
+            Animals? animal = animalsList.FirstOrDefault(x => x.id == animalId);
+            Account? account = accountList.FirstOrDefault(x => x.id == updateAnimalBody.chipperid);
+            Locations? locations = locationsList.FirstOrDefault(x => x.id == updateAnimalBody.chippinglocationid);
+
+            if (animal is null || account is null || locations is null) return StatusCode((int)Status.isNotId);
+            if (animal.lifestatus == "DEAD" && updateAnimalBody.lifestatus == "ALIVE") return StatusCode((int)Status.error);
+            //if (locations.id == updateAnimalBody.chippinglocationid) return StatusCode((int)Status.error);
+
+            animal.weight = updateAnimalBody.weight;
+            animal.length = updateAnimalBody.length;
+            animal.height = updateAnimalBody.height;
+            animal.gender = updateAnimalBody.gender;
+            animal.lifestatus = updateAnimalBody.lifestatus;
+            animal.chipperid = updateAnimalBody.chipperid;
+            animal.chippinglocationid = updateAnimalBody.chippinglocationid;
+            animal.deathdatetime = updateAnimalBody.lifestatus == "DEAD" ? DateTime.UtcNow : null;
+
+            animalsContext.Update(animal);
+            await animalsContext.SaveChangesAsync();
+
+            return Json(animal);
         }
     }
 }
