@@ -21,4 +21,10 @@
         public int chipperid { get; set; }
         public long? chippinglocationid { get; set; }
     }
+
+    public class UpdateAnimalType
+    {
+        public long oldTypeId { get; set; }
+        public long newTypeId { get;set; }
+    }
 }

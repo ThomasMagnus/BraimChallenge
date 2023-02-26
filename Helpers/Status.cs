@@ -7,6 +7,7 @@
         isAuth = 403,
         isDouble = 409,
         isNotId = 404,
-        notValData = 401
+        notValData = 401,
+        isContains = 409,
     }
 }

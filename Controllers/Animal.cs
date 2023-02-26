@@ -7,6 +7,7 @@ using BraimChallenge.RequestBody;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using BraimChallenge.Context;
+using System;
 
 namespace BraimChallenge.Controllers
 {
@@ -129,7 +130,7 @@ namespace BraimChallenge.Controllers
         {
             if (_animalService.CheckingForZero(_detecters, animalBody.weight, animalBody.height, animalBody.length, animalBody.chipperid, animalBody.chippinglocationid) != 200) 
                 return StatusCode((int)Status.error);
-            if (_animalService.CheckGender(animalBody?.gender) != 200) return StatusCode((int)Status.error);
+            if (_animalService.CheckGender(animalBody.gender) != 200) return StatusCode((int)Status.error);
             if (animalBody.animaltypes is null || animalBody.animaltypes.Length <= 0) return StatusCode((int)Status.error);
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
 
@@ -173,8 +174,8 @@ namespace BraimChallenge.Controllers
 
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
 
-            if (_animalService.CheckGender(updateAnimalBody?.gender) != 200) return StatusCode((int)Status.error);
-            if (_animalService.CheckLifeStatus(updateAnimalBody?.lifestatus) != 200) return StatusCode((int)Status.error);
+            if (_animalService.CheckGender(updateAnimalBody.gender) != 200) return StatusCode((int)Status.error);
+            if (_animalService.CheckLifeStatus(updateAnimalBody.lifestatus) != 200) return StatusCode((int)Status.error);
 
             using AnimalsContext animalsContext = new();
             using AccountContext accountContext = new AccountContext();
@@ -201,6 +202,123 @@ namespace BraimChallenge.Controllers
             animal.chippinglocationid = updateAnimalBody.chippinglocationid;
             animal.deathdatetime = updateAnimalBody.lifestatus == "DEAD" ? DateTime.UtcNow : null;
 
+            animalsContext.Update(animal);
+            await animalsContext.SaveChangesAsync();
+
+            return Json(animal);
+        }
+
+        // API 5: Удаление животного
+        [HttpDelete, Route("animals/{animalId?}")]
+        public async Task<IActionResult> DeleteAnimal([FromHeader][Required] string Authorize, long? animalId)
+        {
+            if (_detecters?.DetectId(animalId) != 200) return StatusCode((int)Status.error);
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using AnimalsContext animalsContext = new AnimalsContext();
+            List<Animals> animalsList = animalsContext.animal.ToList();
+
+            Animals? animal = animalsList.FirstOrDefault(x => x.id == animalId);
+
+            if (animal is null) return StatusCode((int)Status.isNotId);
+
+            animalsContext.Remove(animal);
+            await animalsContext.SaveChangesAsync();
+
+            return StatusCode((int)Status.success);
+            
+        }
+
+        // API 6: Добавление типа животного к животному
+        [HttpGet, Route("animals/{animalId?}/types/{typeId?}")]
+        public async Task<IActionResult> AddTypeAnimal([FromHeader][Required] string Authorize, long? animalId, long typeId)
+        {
+            if (_detecters?.DetectId(animalId) != 200 || _detecters.DetectId(typeId) != 200) return StatusCode((int)Status.error);
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using AnimalsContext animalsContext = new AnimalsContext();
+            using AnimalTypeContext animalTypeContext = new();
+
+            List<Animals> animalsList = animalsContext.animal.ToList();
+            List<AnimalType> animalTypeList = animalTypeContext.animaltype.ToList();
+
+            Animals? animal = animalsList.FirstOrDefault(x => x.id == animalId);
+            AnimalType? animalType = animalTypeList.FirstOrDefault(x => x.id == typeId);
+
+            if (animal is null || animalType is null) return StatusCode((int)Status.isNotId);
+            long[] animalTypesArray = new long[] { };
+
+            Array.Resize<long>(ref animalTypesArray, animal.animaltypes!.Length + 1);
+
+            Array.Copy(animal.animaltypes, animalTypesArray, animal.animaltypes.Length);
+
+            animalTypesArray[animalTypesArray.Length - 1] = typeId;
+
+            animal.animaltypes = animalTypesArray;
+
+            animalsContext.Update(animal);
+            await animalsContext.SaveChangesAsync();
+
+            return Json(animal);
+        }
+
+        // API 7: Изменение типа животного у животного
+        [HttpPut, Route("animals/{animalId?}/types")]
+        public async Task<IActionResult> UpdateAnimalType([FromHeader][Required] string Authorize, long? animalId, UpdateAnimalType updateAnimalType)
+        {
+            if (_detecters?.DetectId(animalId) != 200 || _detecters.DetectId(updateAnimalType.oldTypeId) != 200 || _detecters.DetectId(updateAnimalType.newTypeId) != 200)
+                return StatusCode((int)Status.error);
+
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using AnimalsContext animalsContext = new();
+            using AnimalTypeContext animalTypeContext = new();
+
+            List<Animals> animalsList = animalsContext.animal.ToList();
+            List<AnimalType> animalTypeList = animalTypeContext.animaltype.ToList();
+
+            Animals? animal = animalsList.FirstOrDefault(x => x.id == animalId);
+            AnimalType? animalTypeOld = animalTypeList.FirstOrDefault(x => x.id == updateAnimalType.oldTypeId);
+            AnimalType? animalTypeNew = animalTypeList.FirstOrDefault(x => x.id == updateAnimalType.newTypeId);
+
+            if (animal is null || animalTypeOld is null || animalTypeNew is null) return StatusCode((int)Status.isNotId);
+            if (!animal.animaltypes!.Contains(updateAnimalType.oldTypeId)) return StatusCode((int)Status.isNotId);
+            if (animal.animaltypes!.Contains(updateAnimalType.newTypeId)) return StatusCode((int)Status.isContains);
+
+            int index = Array.IndexOf(animal.animaltypes, updateAnimalType.oldTypeId);
+            animal.animaltypes[index] = updateAnimalType.newTypeId;
+            animalsContext.Update(animal);
+            await animalsContext.SaveChangesAsync();
+
+            return Json(animal);
+        }
+
+        // API 8: Удаление типа животного у животного
+        [HttpDelete, Route("animals/{animalId?}/types/{typeId?}")]
+        public async Task<IActionResult> DeleteAnimalType([FromHeader][Required] string Authorize, long? animalId, long typeId)
+        {
+            if (_detecters.DetectId(animalId) != 200 || _detecters.DetectId(typeId) != 200) return StatusCode((int)Status.error);
+            if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using AnimalsContext animalsContext = new();
+            using AnimalTypeContext animalTypeContext = new();
+
+            List<Animals> animalsList = animalsContext.animal.ToList();
+            List<AnimalType> animalTypeList = animalTypeContext.animaltype.ToList();
+
+            Animals? animal = animalsList.FirstOrDefault(x => x.id == animalId);
+            AnimalType? animalType = animalTypeList.FirstOrDefault(x => x.id == typeId);
+
+            if (animal is null || animalType is null) return StatusCode((int)Status.isNotId);
+            if (!animal.animaltypes.Contains(typeId)) return StatusCode((int)Status.isNotId);
+
+            if (animal.animaltypes.Length == 1) return StatusCode((int)Status.error);
+
+            long[] longs = new long[] {};
+            Array.Resize(ref longs, animal.animaltypes.Length - 1);
+
+            longs = animal.animaltypes.Where(x => x != typeId).ToArray();
+            animal.animaltypes = longs;
             animalsContext.Update(animal);
             await animalsContext.SaveChangesAsync();
 
