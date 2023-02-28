@@ -92,5 +92,55 @@ namespace BraimChallenge.Controllers
 
             return Json(animalVisiteds);
         }
+
+        // API 2: Добавление точки локации, посещенной животным
+        [HttpPost, Route("/{animalId}/locations/{pointId}")]
+        public IActionResult AddPointAnimalLocation([FromHeader][Required] string Authorize, long animalId, long pointId)
+        {
+            if (_detecter.DetectId(animalId) != 200 || _detecter.DetectId(pointId) != 200) return StatusCode((int)Status.error);
+            if (_detecter.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
+
+            using (AnimalVisitedContext animalVisitedContext = new())
+            {
+                using (AnimalsContext animalContext = new())
+                {
+                    List<Animals> animalsList = animalContext.animal.ToList();
+                    Animals? animals = animalsList.FirstOrDefault(x => x.id == animalId);
+
+                    using (LocationsContext locationContext = new())
+                    {
+
+                        List<Locations> locationsList = locationContext.locations.ToList();
+                        Locations? locations = locationContext.locations.FirstOrDefault(x => x.id == pointId);
+
+                        if (animals is null || locations is null) return StatusCode((int)Status.isNotId);
+                        if (animals.lifestatus == "DEAD") return StatusCode((int)Status.error);
+
+                        List<AnimalVisited> animalsVisitedCollection = animalVisitedContext.animalvisited
+                            .Where(x => x.animalid == animalId)
+                            .OrderBy(x => x.id)
+                            .ToList();
+
+                        if (animalsVisitedCollection.Count != 0 && locations.id == animalsVisitedCollection[animalsVisitedCollection.Count - 1].locationpointid) 
+                            return StatusCode((int)Status.error);
+
+                    }
+                }
+
+                animalVisitedContext.Add(new AnimalVisited()
+                {
+                    animalid = animalId,
+                    locationpointid = pointId,
+                });
+
+                animalVisitedContext.SaveChanges();
+
+                List<AnimalVisited> animalsVisitedList = animalVisitedContext.animalvisited.ToList();
+                AnimalVisited? animalVisited = animalsVisitedList.LastOrDefault(x => x.animalid == animalId && x.locationpointid == pointId);
+
+                return Json(animalVisited);
+
+            }
+        }
     }
 }
