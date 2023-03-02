@@ -18,6 +18,7 @@ namespace BraimChallenge.Models
         public int chipperid { get; set; }
         public long? chippinglocationid { get; set; }
         public string? lifestatus { get; set; } = "ALIVE";
+        public long[]? visitedlocations { get; set; }
         public DateTime? chippingdatetime { get; set; } = DateTime.UtcNow;
         public DateTime? deathdatetime { get; set; } = null;
     }

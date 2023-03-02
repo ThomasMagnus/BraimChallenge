@@ -17,14 +17,14 @@ namespace BraimChallenge.Services
 
         public int CheckGender(string value)
         {
-            if (value is null || !new string[3] { "MALE", "FEMALE", "OTHER" }.Contains(value)) return (int)Status.error;
+            if (!new string[3] { "MALE", "FEMALE", "OTHER" }.Contains(value.ToUpper())) return (int)Status.error;
 
             return (int)Status.success;
         }
 
         public int CheckLifeStatus(string value)
         {
-            if (value is null || !new string[2] { "ALIVE", "DEAD" }.Contains(value)) return (int)Status.error;
+            if (!new string[2] { "ALIVE", "DEAD" }.Contains(value.ToUpper())) return (int)Status.error;
 
             return (int)Status.success;
         }

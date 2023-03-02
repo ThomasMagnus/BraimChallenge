@@ -52,8 +52,8 @@ namespace BraimChallenge.Controllers
             if (from < 0 || size <= 0) return StatusCode((int)Status.error);
             if (_detecters.DetectId(chipperId) != 200 || _detecters.DetectId(chipperId) != 200) return StatusCode((int)Status.error);
 
-            if (!String.IsNullOrEmpty(lifeStatus?.Trim())) if (_animalService.CheckGender(gender) != 200) return StatusCode((int)Status.error);
-            if (!String.IsNullOrEmpty(gender?.Trim())) if (_animalService.CheckLifeStatus(lifeStatus) != 200) return StatusCode((int)Status.error);
+            if (!String.IsNullOrEmpty(gender?.Trim())) if (_animalService.CheckGender(gender) != 200) return StatusCode((int)Status.error);
+            if (!String.IsNullOrEmpty(lifeStatus?.Trim())) if (_animalService.CheckLifeStatus(lifeStatus) != 200) return StatusCode((int)Status.error);
 
             if (_detecters.DetectUserAuth(Authorize) != 200) return StatusCode((int)Status.notValData);
 
@@ -248,7 +248,7 @@ namespace BraimChallenge.Controllers
             if (animal is null || animalType is null) return StatusCode((int)Status.isNotId);
             long[] animalTypesArray = new long[] { };
 
-            Array.Resize<long>(ref animalTypesArray, animal.animaltypes!.Length + 1);
+            Array.Resize(ref animalTypesArray, animal.animaltypes!.Length + 1);
 
             Array.Copy(animal.animaltypes, animalTypesArray, animal.animaltypes.Length);
 
